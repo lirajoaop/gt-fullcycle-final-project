@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { OrderNotFoundError, type OrderService } from '../application/order-service.js';
 import { InvalidOrderError } from '../domain/order.js';
 import { InvalidTransitionError } from '../domain/order-status.js';
+import { createMetrics } from '../metrics.js';
 
 // zod only checks the shape and types of the JSON body.
 // The business rules (RN01–RN07) stay in the domain, in createOrder.
@@ -41,13 +42,20 @@ export function createApp(orderService: OrderService, logger: Logger) {
         if (res.statusCode >= 400) return 'warn';
         return 'info';
       },
-      autoLogging: { ignore: (req) => req.url === '/health' },
+      autoLogging: { ignore: (req) => req.url === '/health' || req.url === '/metrics' },
     }),
   );
+  const metrics = createMetrics();
+  app.use(metrics.middleware);
   app.use(express.json());
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
+  });
+
+  app.get('/metrics', async (_req, res) => {
+    res.set('Content-Type', metrics.registry.contentType);
+    res.send(await metrics.registry.metrics());
   });
 
   app.post('/orders', async (req, res) => {
