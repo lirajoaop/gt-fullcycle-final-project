@@ -19,7 +19,7 @@ services:
     build: .
     environment:
       PORT: 3000
-      # Not read yet: the Postgres repository (J9) will use it.
+      # The API uses Postgres when DATABASE_URL is set (host "db" inside the compose network).
       DATABASE_URL: postgres://${POSTGRES_USER:-pedidos}:${POSTGRES_PASSWORD:-pedidos_dev}@db:5432/${POSTGRES_DB:-pedidos}
     ports:
       - "${API_PORT:-3000}:3000"
