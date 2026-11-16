@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OrderService } from '../../src/application/order-service.js';
 import { createApp } from '../../src/http/app.js';
 import { InMemoryOrderRepository } from '../../src/infra/in-memory-order-repository.js';
+import { createLogger } from '../../src/logger.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // A valid UUID that is never generated, so it never matches a saved order.
@@ -24,7 +25,7 @@ describe('Orders API', () => {
 
   beforeEach(() => {
     orderService = new OrderService(new InMemoryOrderRepository());
-    app = createApp(orderService);
+    app = createApp(orderService, createLogger('silent'));
   });
 
   afterEach(() => {
@@ -98,12 +99,18 @@ describe('Orders API', () => {
 
   it('returns a generic 500 without leaking internal details', async () => {
     vi.spyOn(orderService, 'getById').mockRejectedValue(new Error('database password is wrong'));
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const response = await request(app).get(`/orders/${UNKNOWN_ID}`);
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected internal error' } });
-    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it('echoes the x-request-id header, or creates one, for log correlation', async () => {
+    const withId = await request(app).get('/health').set('x-request-id', 'abc-123');
+    const withoutId = await request(app).get('/health');
+
+    expect(withId.headers['x-request-id']).toBe('abc-123');
+    expect(withoutId.headers['x-request-id']).toMatch(UUID);
   });
 });

@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import express, { type ErrorRequestHandler } from 'express';
+import type { Logger } from 'pino';
+import { pinoHttp } from 'pino-http';
 import { z } from 'zod';
 import { OrderNotFoundError, type OrderService } from '../application/order-service.js';
 import { InvalidOrderError } from '../domain/order.js';
@@ -17,8 +20,29 @@ const createOrderBody = z.object({
 });
 
 // Builds the app without opening a port, so tests can use it directly.
-export function createApp(orderService: OrderService) {
+export function createApp(orderService: OrderService, logger: Logger) {
   const app = express();
+
+  // Logs one line per request (method, url, status, response time) with a
+  // request id. The id comes from the x-request-id header when the caller sends
+  // one, so logs from different services can be correlated.
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: (req, res) => {
+        const incoming = req.headers['x-request-id'];
+        const id = typeof incoming === 'string' && incoming !== '' ? incoming : randomUUID();
+        res.setHeader('x-request-id', id);
+        return id;
+      },
+      customLogLevel: (_req, res, error) => {
+        if (error || res.statusCode >= 500) return 'error';
+        if (res.statusCode >= 400) return 'warn';
+        return 'info';
+      },
+      autoLogging: { ignore: (req) => req.url === '/health' },
+    }),
+  );
   app.use(express.json());
 
   app.get('/health', (_req, res) => {
@@ -65,6 +89,7 @@ const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     return;
   }
 
-  console.error(error);
+  // pino-http logs res.err with the stack trace; the caller only gets a generic message.
+  res.err = error instanceof Error ? error : new Error(String(error));
   res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected internal error' } });
 };
