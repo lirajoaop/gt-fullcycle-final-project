@@ -54,6 +54,20 @@ describe.skipIf(!DATABASE_URL)('PostgresOrderRepository', () => {
     expect(await repository.findById(randomUUID())).toBeNull();
   });
 
+  it('updates the status and updatedAt of an order', async () => {
+    const order = newOrder();
+    await repository.insert(order);
+    const later = new Date('2026-11-16T13:00:00.000Z');
+
+    await repository.updateStatus(order.id, 'paid', later);
+
+    expect(await repository.findById(order.id)).toEqual({ ...order, status: 'paid', updatedAt: later });
+  });
+
+  it('rejects updating the status of an order that does not exist', async () => {
+    await expect(repository.updateStatus(randomUUID(), 'paid', NOW)).rejects.toThrow(/does not exist/);
+  });
+
   it('rejects inserting the same id twice', async () => {
     const order = newOrder();
     await repository.insert(order);

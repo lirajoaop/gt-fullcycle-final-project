@@ -52,6 +52,17 @@ export class PostgresOrderRepository implements OrderRepository {
     const { rows } = await this.pool.query<OrderRow>(`SELECT ${COLUMNS} FROM orders WHERE id = $1`, [id]);
     return rows[0] ? toOrder(rows[0]) : null;
   }
+
+  async updateStatus(id: string, status: OrderStatus, updatedAt: Date): Promise<void> {
+    const result = await this.pool.query('UPDATE orders SET status = $2, updated_at = $3 WHERE id = $1', [
+      id,
+      status,
+      updatedAt,
+    ]);
+    if (result.rowCount === 0) {
+      throw new Error(`Order ${id} does not exist`);
+    }
+  }
 }
 
 // Maps the snake_case columns to the camelCase domain object.

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { createOrder, type CreateOrderInput, type Order } from '../domain/order.js';
 import type { OrderRepository } from '../domain/order-repository.js';
+import { transition, type OrderAction } from '../domain/order-status.js';
 
 export class OrderNotFoundError extends Error {
   constructor(public readonly orderId: string) {
@@ -26,5 +27,25 @@ export class OrderService {
       throw new OrderNotFoundError(id);
     }
     return order;
+  }
+
+  pay(id: string): Promise<Order> {
+    return this.changeStatus(id, 'pay');
+  }
+
+  ship(id: string): Promise<Order> {
+    return this.changeStatus(id, 'ship');
+  }
+
+  cancel(id: string): Promise<Order> {
+    return this.changeStatus(id, 'cancel');
+  }
+
+  // The state machine decides if the change is allowed; the repository only saves it.
+  private async changeStatus(id: string, action: OrderAction): Promise<Order> {
+    const order = await this.getById(id);
+    const updated = transition(order, action, new Date());
+    await this.repository.updateStatus(id, updated.status, updated.updatedAt);
+    return updated;
   }
 }

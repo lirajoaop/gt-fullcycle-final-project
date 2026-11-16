@@ -5,6 +5,7 @@ import { pinoHttp } from 'pino-http';
 import { z } from 'zod';
 import { OrderNotFoundError, type OrderService } from '../application/order-service.js';
 import { InvalidOrderError } from '../domain/order.js';
+import { InvalidTransitionError } from '../domain/order-status.js';
 
 // zod only checks the shape and types of the JSON body.
 // The business rules (RN01–RN07) stay in the domain, in createOrder.
@@ -60,6 +61,18 @@ export function createApp(orderService: OrderService, logger: Logger) {
     res.json(order);
   });
 
+  app.post('/orders/:id/pay', async (req, res) => {
+    res.json(await orderService.pay(req.params.id));
+  });
+
+  app.post('/orders/:id/ship', async (req, res) => {
+    res.json(await orderService.ship(req.params.id));
+  });
+
+  app.post('/orders/:id/cancel', async (req, res) => {
+    res.json(await orderService.cancel(req.params.id));
+  });
+
   app.use(errorHandler);
   return app;
 }
@@ -75,6 +88,11 @@ const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
 
   if (error instanceof InvalidOrderError) {
     res.status(400).json({ error: { code: 'INVALID_ORDER', message: error.message, details: error.problems } });
+    return;
+  }
+
+  if (error instanceof InvalidTransitionError) {
+    res.status(409).json({ error: { code: 'INVALID_TRANSITION', message: error.message } });
     return;
   }
 
