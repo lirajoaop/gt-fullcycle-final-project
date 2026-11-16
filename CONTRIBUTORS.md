@@ -18,13 +18,17 @@ Também revisei e aprovei os PRs do Leandro #1, #4 (antes, pedi mudanças para a
 
 ## Leandro Frota — Pedidos: pagamento, envio e cancelamento
 
-- Máquina de estados do pedido
-- `POST /orders/:id/pay`, `/ship` e `/cancel`
-- Dockerfile e Docker Compose (API + Postgres)
-- Pipeline de CI no GitHub Actions
-- Métrica de latência em `/metrics` e SLO
-- Testes unitários das transições e teste de integração do fluxo de status
-- ADR 0001, smoke test k6 e `docs/desempenho.md`
+O que entreguei (atualizado no fechamento):
+
+| Entrega | Arquivos | PR |
+|---|---|---|
+| Pipeline de CI no GitHub Actions (L1) e Docker Compose com Postgres (L2) | `.github/workflows/ci.yml`, `docker-compose.yml` | #1 |
+| Máquina de estados do pedido (L3), testes unitários das transições (L4) e ADR 0001 (L5) | `src/domain/order-status.ts`, `tests/unit/order-status.test.ts`, `docs/adr/0001-maquina-de-estados.md` | #4 |
+| Dockerfile da API e serviço `api` no compose (L6), `POST /orders/:id/pay`, `/ship` e `/cancel` com `updateStatus` no repositório (L7) e teste de integração do fluxo de status (L8) | `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `src/application/order-service.ts`, `src/http/app.ts`, `src/infra/*-order-repository.ts`, `tests/integration/order-status-flow.test.ts` | #6 |
+| Métrica de latência em `/metrics` (L9), SLO no README (L10), smoke test k6 (L11) e `docs/desempenho.md` com p95 medido (L12) | `src/metrics.ts`, `tests/integration/metrics.test.ts`, `tests/k6/smoke.js`, `docs/desempenho.md`, seção "Observabilidade" do `README.md` | #9 |
+| Coverage e build no pipeline (L13) e minha parte em `docs/ia.md` e `CONTRIBUTORS.md` (L14) | `.github/workflows/ci.yml`, seção "CI" do `README.md`, `docs/ia.md`, `CONTRIBUTORS.md` | a abrir |
+
+Para implementar o `updateStatus` (L7) acrescentei 2 testes ao arquivo do João `tests/integration/postgres-order-repository.test.ts`. Os PRs #1, #4 e #6 foram revisados pelo João.
 
 ## Uso de IA
 
