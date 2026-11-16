@@ -4,13 +4,17 @@ Projeto em dupla, dividido por **módulo do sistema**. Cada pessoa commita a pr�
 
 ## João Pedro Lira — Pedidos: criação e consulta
 
-- Entidade Pedido e regras de criação
-- Padrão Repository: interface, repositório em memória e repositório Postgres
-- `POST /orders` e `GET /orders/:id`
-- Configuração por variável de ambiente e `.env.example`
-- Logs estruturados
-- Testes unitários da criação, teste de integração da API e coverage mínimo
-- OpenAPI do endpoint principal e README
+O que entreguei (atualizado no fechamento):
+
+| Entrega | Arquivos | PR |
+|---|---|---|
+| Base do projeto: Node + TypeScript, ESLint, Vitest, README inicial | `package.json`, `tsconfig.json`, `eslint.config.js`, `vitest.config.ts` | direto na `main` |
+| Entidade Pedido e regras de criação (RN01–RN07, RN10) + testes unitários | `src/domain/order.ts`, `tests/unit/order.test.ts` | #2 |
+| Padrão Repository (interface + memória), `OrderService`, `POST /orders`, `GET /orders/:id`, `GET /health`, testes de integração com Supertest, mensagens da API em inglês | `src/domain/order-repository.ts`, `src/infra/in-memory-order-repository.ts`, `src/application/order-service.ts`, `src/http/app.ts`, `tests/integration/orders-api.test.ts` | #3 |
+| Repositório Postgres, configuração por variável de ambiente e `.env.example`, logs estruturados com pino e `x-request-id` | `src/infra/postgres-order-repository.ts`, `src/config.ts`, `src/logger.ts`, `src/server.ts`, testes correspondentes | #5 |
+| Coverage mínimo de 80%, OpenAPI do endpoint principal (lint com Spectral), README do primeiro dia, `docs/ia.md` | `vitest.config.ts`, `docs/openapi.yaml`, `.spectral.yaml`, `README.md`, `docs/ia.md` | #8 |
+
+Também revisei e aprovei os PRs do Leandro #1, #4 (antes, pedi mudanças para as mensagens em inglês) e #6, e fiz o merge do #7.
 
 ## Leandro Frota — Pedidos: pagamento, envio e cancelamento
 
