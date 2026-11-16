@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -22,6 +23,7 @@
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.39.5",
     "globals": "^16.5.0",
     "supertest": "^7.3.2",
