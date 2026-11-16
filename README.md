@@ -26,7 +26,17 @@ npm run dev                   # API em http://localhost:3000
 
 Sem `DATABASE_URL` no `.env`, a API sobe com os pedidos **em memória** (somem ao reiniciar). Com o Postgres, eles ficam salvos.
 
-> Subir a API também pelo Docker Compose, com um único comando, entra com o Dockerfile (L6, Leandro).
+### Tudo pelo Docker Compose (um comando)
+
+Sobe a API e o Postgres juntos, sem precisar do Node local:
+
+```bash
+docker compose up --build        # API em http://localhost:3000
+# se a porta 3000 estiver ocupada: API_PORT=3001 docker compose up --build
+docker compose down              # para tudo
+```
+
+Neste modo a API usa o Postgres do compose (`DATABASE_URL` já vem configurada) e roda com usuário não-root.
 
 ### Testando na mão
 
@@ -81,8 +91,9 @@ A API valida as variáveis na subida e **não sobe** se alguma estiver inválida
 | `POST /orders/:id/ship` | 200 com o pedido `shipped` | 404, 409 `INVALID_TRANSITION` |
 | `POST /orders/:id/cancel` | 200 com o pedido `cancelled` | 404, 409 `INVALID_TRANSITION` |
 | `GET /health` | 200 `{"status":"ok"}` | — |
+| `GET /metrics` | 200 com as métricas em texto (Prometheus) | — |
 
-Os endpoints de status (`pay`, `ship`, `cancel`) entram no L7 (Leandro). Todo erro segue o formato `{ "error": { "code", "message", "details"? } }`. O contrato completo do endpoint principal está em [docs/openapi.yaml](docs/openapi.yaml); para ver navegável, cole o arquivo em [editor.swagger.io](https://editor.swagger.io).
+Todo erro segue o formato `{ "error": { "code", "message", "details"? } }`. O contrato completo do endpoint principal está em [docs/openapi.yaml](docs/openapi.yaml); para ver navegável, cole o arquivo em [editor.swagger.io](https://editor.swagger.io).
 
 Valores em dinheiro são sempre **inteiros em centavos** (`unitPriceCents`, `totalCents`), para evitar erro de arredondamento.
 
@@ -127,7 +138,33 @@ A decisão sobre onde ficam as regras de status está no [ADR 0001](docs/adr/000
 - Erros inesperados vão para o log com o stack trace; quem chamou recebe só uma mensagem genérica.
 - Para ler os logs formatados em desenvolvimento: `npm run dev | npx pino-pretty`.
 
-> Métrica, SLO e o teste de carga com k6 entram nos itens L9–L12 (Leandro).
+### Métrica de latência
+
+`GET /metrics` expõe as métricas no formato Prometheus. A principal é o histograma `http_request_duration_seconds`, com os labels `method`, `route` (o padrão da rota, como `/orders/:id`, e não a URL real) e `status_code`. Os buckets incluem 0,2 s, o limite do SLO.
+
+### SLO (objetivo de nível de serviço)
+
+| Indicador | Objetivo | Janela |
+|---|---|---|
+| Latência | 95% das requisições em menos de 200 ms (p95 < 200 ms) | 30 dias |
+| Erros | menos de 1% das requisições com resposta 5xx | 30 dias |
+
+Respostas 4xx (corpo inválido, pedido inexistente, transição inválida) são erros do cliente e **não** contam como falha do serviço.
+
+Consultas PromQL para medir:
+
+```promql
+# p95 de latência nos últimos 5 minutos
+histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
+
+# fração de requisições mais rápidas que 200 ms (deve ficar acima de 0,95)
+sum(rate(http_request_duration_seconds_bucket{le="0.2"}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))
+
+# taxa de erro 5xx (deve ficar abaixo de 0,01)
+sum(rate(http_request_duration_seconds_count{status_code=~"5.."}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))
+```
+
+O smoke test do k6 ([tests/k6/smoke.js](tests/k6/smoke.js)) usa os mesmos limites como thresholds, e os números medidos ficam em [docs/desempenho.md](docs/desempenho.md).
 
 ## CI
 

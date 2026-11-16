@@ -4,7 +4,8 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  { ignores: ['dist/', 'coverage/'] },
+  // tests/k6 runs in the k6 runtime (not Node), with its own globals and modules.
+  { ignores: ['dist/', 'coverage/', 'tests/k6/'] },
   js.configs.recommended,
   tseslint.configs.recommended,
   {
