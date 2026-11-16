@@ -168,7 +168,7 @@ O smoke test do k6 ([tests/k6/smoke.js](tests/k6/smoke.js)) usa os mesmos limite
 
 ## CI
 
-O GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) roda em todo PR e em todo push na `main`: instala as dependências, roda o lint e os testes. O merge só acontece com o CI verde.
+O GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) roda em todo PR e em todo push na `main`: instala as dependências, roda o lint, os testes com cobertura e o build. O CI **falha se a cobertura cair abaixo do mínimo de 80%** (`vitest.config.ts`) ou se o TypeScript não compilar. O merge só acontece com o CI verde.
 
 ## Documentação
 
