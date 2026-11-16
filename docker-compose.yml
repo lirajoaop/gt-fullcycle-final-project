@@ -15,5 +15,17 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build: .
+    environment:
+      PORT: 3000
+      # Not read yet: the Postgres repository (J9) will use it.
+      DATABASE_URL: postgres://${POSTGRES_USER:-pedidos}:${POSTGRES_PASSWORD:-pedidos_dev}@db:5432/${POSTGRES_DB:-pedidos}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db-data:
